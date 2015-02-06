@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:security="http://www.springframework.org/schema/security"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+          http://www.springframework.org/schema/security
+          http://www.springframework.org/schema/security/spring-security.xsd">
+   <security:http auto-config="true" access-denied-page="/" >
+        <security:intercept-url pattern="/login" access=""/>
+        <security:intercept-url pattern="/" access=""/>
+
+        <security:form-login
+            login-page="/"
+            authentication-failure-handler-ref="hungryAuthenticationFailureHandler"
+            default-target-url="/menu"
+            login-processing-url="/loginCheck"
+            username-parameter="mailAddress"
+            password-parameter="password" />
+
+        <security:logout
+            logout-url="/logout"
+            logout-success-url="/"
+            invalidate-session="true"
+            delete-cookies="JSESSIONID"/>
+
+         <security:csrf />
+
+        <security:headers>
+            <security:cache-control />
+            <security:content-type-options />
+            <security:hsts />
+            <security:frame-options />
+            <security:xss-protection enabled="true" block="true" />
+        </security:headers>
+         <security:anonymous enabled ="false"/>
+        <security:session-management>
+            <security:concurrency-control max-sessions="5"/>
+        </security:session-management>
+        <security:custom-filter before="FORM_LOGIN_FILTER" ref="userInfoFilter" />
+    </security:http>
+
+    <security:authentication-manager>
+        <security:authentication-provider user-service-ref="loginUserDetailsService">
+            <security:password-encoder ref="passwordEncoder" />
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+     <bean class="hungry.common.SecureLoginPasswordEncoder" id="passwordEncoder"/>
+<!--
+    <bean class="org.springframework.security.authentication.encoding.PlaintextPasswordEncoder" id="passwordEncoder"/>
+ -->
+
+    <bean id="loginUserDetailsService" class="hungry.service.LoginUserDetailService"/>
+
+    <bean id="userInfoFilter" class="hungry.common.UserInfoFilter"/>
+
+    <bean id="hungryAuthenticationFailureHandler" class="hungry.common.SspAuthenticationFailureHandler">
+        <property name="defaultFailureUrl" value="/"/>
+    </bean>
+
+ </beans>

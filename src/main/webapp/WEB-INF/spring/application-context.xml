@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:jee="http://www.springframework.org/schema/jee" xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/jee
+        http://www.springframework.org/schema/jee/spring-jee.xsd">
+
+    <context:annotation-config />
+
+    <bean id="messageSource"
+        class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="basenames">
+            <list>
+                <value>classpath:/messages/message</value>
+                <value>classpath:/messages/ValidationMessages</value>
+                <value>classpath:/application</value>
+                <value>classpath:/mail/mailPasswd_en.vm</value>
+            </list>
+        </property>
+    </bean>
+
+    <context:component-scan base-package="hungry" />
+
+	<jee:jndi-lookup id="coreMasterDB" jndi-name="jdbc/CoreMasterDB" />
+
+    <bean id="transactionManager"
+        class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="coreMasterDB" />
+    </bean>
+
+    <tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="find*" read-only="true" />
+            <tx:method name="edit*" propagation="REQUIRED" isolation="REPEATABLE_READ"
+                timeout="60000" read-only="false" rollback-for="java.lang.Exception" />
+            <tx:method name="delete*" propagation="REQUIRED" isolation="REPEATABLE_READ"
+                timeout="60000" read-only="false" rollback-for="java.lang.Exception" />
+            <tx:method name="regist*" propagation="REQUIRED" isolation="REPEATABLE_READ"
+                timeout="60000" read-only="false" rollback-for="java.lang.Exception" />
+            <tx:method name="*Tx" propagation="REQUIRED" isolation="REPEATABLE_READ"
+                timeout="60000" read-only="false" rollback-for="java.lang.Exception" />
+        </tx:attributes>
+    </tx:advice>
+
+    <aop:config>
+        <aop:pointcut id="servicePointcut" expression="execution(* jp.microad.ssp.service..*(..))" />
+        <aop:advisor advice-ref="transactionAdvice" pointcut-ref="servicePointcut" />
+    </aop:config>
+
+    <context:property-placeholder location="classpath:application.properties"/>
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="${mail.smtp.host}"/>
+        <property name="port" value="${mail.smtp.port}"/>
+        <property name="username" value="${mail.from.address}"/>
+        <property name="password" value="${mail.from.password}"/>
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.auth">${mail.smtp.auth}</prop>
+                <prop key="mail.smtp.starttls.enable">${mail.smtp.starttls.enable}</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="velocityEngine" class="org.springframework.ui.velocity.VelocityEngineFactoryBean">
+        <property name="velocityProperties">
+            <value>
+                resource.loader=class
+                class.resource.loader.class=org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader
+            </value>
+        </property>
+    </bean>
+</beans>
